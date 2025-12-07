@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>湘江命运测试 — 烽火耀八桂</title>
+
+<style>
+  :root{
+    --accent:#b30000;
+    --muted:#6b6b6b;
+    --panel-bg:#ffffff;
+    --maxw:780px;
+  }
+
+  body{
+    margin:0;
+    background:#f5f5f5;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", Arial;
+  }
+
+  .wrap{
+    max-width:var(--maxw);
+    margin:20px auto;
+    background:var(--panel-bg);
+    padding:18px;
+    border-radius:12px;
+    box-shadow:0 3px 20px rgba(0,0,0,0.08);
+  }
+
+  h1{margin:0;font-size:22px;color:var(--accent);}
+  .lead{margin:12px 0 18px;color:#333;line-height:1.65;}
+
+  .q{
+    padding:14px;
+    border-radius:10px;
+    background:white;
+    border:1px solid #eee;
+    margin-bottom:12px;
+  }
+
+  .opts{display:flex;flex-direction:column;gap:8px;}
+
+  button.opt{
+    padding:10px;
+    font-size:15px;
+    background:white;
+    border:1px solid #ddd;
+    border-radius:8px;
+    cursor:pointer;
+  }
+
+  button.opt:hover{
+    background:#f8f8f8;
+  }
+
+  .btn{
+    width:100%;
+    padding:12px;
+    background:var(--accent);
+    color:white;
+    font-weight:bold;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    margin-top:14px;
+  }
+
+  .result{
+    display:none;
+    margin-top:20px;
+    padding:16px;
+    background:#fff5f5;
+    border-radius:10px;
+    border:1px solid #e5bcbc;
+  }
+
+  footer{
+    margin-top:20px;
+    font-size:12px;
+    color:#777;
+    text-align:center;
+  }
+
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+  <h1>湘江命运测试</h1>
+  <p class="lead">
+    用不超过一分钟，以一名普通红军的视角，完成六个抉择。
+    每个选项都会影响你的生存率。  
+    湘江战役中，没有绝对正确的答案，只有逼近真实的选择。
+  </p>
+
+  <div id="question-container"></div>
+
+  <div id="result" class="result"></div>
+
+  <button id="restart" class="btn" style="display:none" onclick="location.reload()">再测一次</button>
+
+  <footer>© 中国近现代史纲要 · 第7小组</footer>
+
+</div>
+
+<script>
+const QUESTIONS = [
+  { q:"Q1｜你的体能状况？",
+    opts:[
+      {txt:"体力很强，长行无压力", v:3},
+      {txt:"普通水平，能咬牙跟上", v:2},
+      {txt:"偏弱，但意志可以撑", v:1},
+    ]
+  },
+  { q:"Q2｜面对封锁线，你会？",
+    opts:[
+      {txt:"直接强渡，不犹豫", v:3},
+      {txt:"绕远找更稳妥的渡口", v:2},
+      {txt:"固守拖敌", v:1},
+    ]
+  },
+  { q:"Q3｜敌机扫射，你会？",
+    opts:[
+      {txt:"立即分散降低风险", v:3},
+      {txt:"找掩体趴下", v:2},
+      {txt:"原地不动", v:1},
+    ]
+  },
+  { q:"Q4｜粮食不足时？",
+    opts:[
+      {txt:"先让伤员吃", v:1},
+      {txt:"留一点自己保持体力", v:2},
+      {txt:"完全按组织分配", v:3},
+    ]
+  },
+  { q:"Q5｜体力耗尽时？",
+    opts:[
+      {txt:"强撑着继续走", v:3},
+      {txt:"休息一会再赶上队伍", v:2},
+      {txt:"停下等待救援", v:1},
+    ]
+  },
+  { q:"Q6｜战友受伤，你会？",
+    opts:[
+      {txt:"背着他一起走", v:1},
+      {txt:"扶一段路并给口粮", v:2},
+      {txt:"交由组织处理", v:3},
+    ]
+  },
+];
+
+const RESULTS = [
+  {
+    minScore:15,
+    title:"生存率 ≈ 45%｜冷静型战士",
+    text:"你判断稳、体能不错。在混乱中保持方向，是那群能走出湘江的人之一。"
+  },
+  {
+    minScore:10,
+    title:"生存率 ≈ 27%｜普通红军",
+    text:"你的选择，与当年的大多数红军极为相似：勇气、疲惫、犹疑交织，命运更多取决于形势。"
+  },
+  {
+    minScore:0,
+    title:"生存率 ≈ 9%｜赤诚的战士",
+    text:"善良与勇气让你更愿意牺牲自己，这在湘江意味着你会把生的机会让给别人。"
+  }
+];
+
+let index = 0;
+let totalScore = 0;
+
+function renderQuestion(){
+  const container = document.getElementById("question-container");
+  const q = QUESTIONS[index];
+
+  const html = `
+    <div class="q">
+      <h3>${q.q}</h3>
+      <div class="opts">
+        ${q.opts.map((o,i)=>`<button class="opt" onclick="choose(${o.v})">${String.fromCharCode(65+i)}. ${o.txt}</button>`).join("")}
+      </div>
+    </div>`;
+  container.innerHTML = html;
+}
+
+function choose(v){
+  totalScore += v;
+  index++;
+  if(index < QUESTIONS.length) renderQuestion();
+  else showResult();
+}
+
+function showResult(){
+  const res = RESULTS.find(r=>totalScore>=r.minScore);
+
+  document.getElementById("result").style.display="block";
+  document.getElementById("result").innerHTML =
+    `<h2>${res.title}</h2><p>${res.text}</p>
+     <p style="color:#666;font-size:13px;margin-top:12px;">
+       湘江战役损失超60%，是长征最惨烈一役。
+     </p>`;
+
+  document.getElementById("restart").style.display="block";
+}
+
+renderQuestion();
+</script>
+
+</body>
+</html>
